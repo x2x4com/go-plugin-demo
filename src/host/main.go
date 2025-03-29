@@ -4,11 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"go-plugin-demo/src/shared"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/hashicorp/go-plugin"
@@ -44,44 +41,11 @@ func main() {
 
 	// 3. 加载所有插件
 	for _, pluginConfig := range config.Plugins {
-		// 校验插件路径
-		if _, err := os.Stat(pluginConfig.Path); os.IsNotExist(err) {
-			log.Printf("插件 %s 路径不存在: %s", pluginConfig.Name, pluginConfig.Path)
-			continue
-		}
-
-		// 转换为绝对路径
-		absPath, err := filepath.Abs(pluginConfig.Path)
+		err := pm.LoadPlugins(&pluginConfig)
 		if err != nil {
-			log.Printf("获取插件 %s 绝对路径失败: %v", pluginConfig.Name, err)
+			log.Fatal(pluginConfig.Name, " 加载插件失败: ", err)
 			continue
 		}
-		pluginConfig.Path = absPath
-
-		client := plugin.NewClient(&plugin.ClientConfig{
-			HandshakeConfig: shared.Handshake,
-			Plugins: map[string]plugin.Plugin{
-				pluginConfig.Name: &shared.DynamicPluginRPC{},
-			},
-			Cmd: exec.Command(pluginConfig.Path),
-		})
-
-		// 连接RPC客户端
-		rpcClient, err := client.Client()
-		if err != nil {
-			log.Printf("连接插件 %s RPC失败: %v", pluginConfig.Name, err)
-			continue
-		}
-
-		// 获取插件实例
-		if _, err := rpcClient.Dispense(pluginConfig.Name); err != nil {
-			log.Printf("获取插件 %s 实例失败: %v", pluginConfig.Name, err)
-			continue
-		}
-
-		// 注册插件
-		pm.plugins[pluginConfig.Name] = client
-		fmt.Printf("成功加载插件: %s\n", pluginConfig.Name)
 	}
 
 	// 4. 交互式菜单

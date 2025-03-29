@@ -2,29 +2,29 @@
   "plugins": [
     {
       "name": "calculator",
-      "path": "./bin/plugins/calculator",
+      "path": "/Users/jack/Git/github/x2x4/go-plugin-demo/bin/plugins/calculator",
       "handshake": {
-        "protocol_version": 1,
-        "magic_cookie_key": "CALCULATOR_PLUGIN",
-        "magic_cookie_value": "secure-cookie-value"
+        "ProtocolVersion": 1,
+        "MagicCookieKey": "DYNAMIC_PLUGIN_CALCULATOR",
+        "MagicCookieValue": "calculator"
       }
     },
     {
       "name": "string_utils",
-      "path": "./bin/plugins/string_utils",
+      "path": "/Users/jack/Git/github/x2x4/go-plugin-demo/bin/plugins/string_utils",
       "handshake": {
-        "protocol_version": 1,
-        "magic_cookie_key": "STRING_UTILS_PLUGIN",
-        "magic_cookie_value": "secure-cookie-value"
+        "ProtocolVersion": 1,
+        "MagicCookieKey": "DYNAMIC_PLUGIN_STRING_UTILS",
+        "MagicCookieValue": "string_utils"
       }
     },
     {
       "name": "date_utils",
-      "path": "./bin/plugins/date_utils",
+      "path": "/Users/jack/Git/github/x2x4/go-plugin-demo/bin/plugins/date_utils",
       "handshake": {
-        "protocol_version": 1,
-        "magic_cookie_key": "DATE_UTILS_PLUGIN",
-        "magic_cookie_value": "secure-cookie-value"
+        "ProtocolVersion": 1,
+        "MagicCookieKey": "DYNAMIC_PLUGIN_DATE_UTILS",
+        "MagicCookieValue": "date_utils"
       }
     }
   ]

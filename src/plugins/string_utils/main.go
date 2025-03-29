@@ -1,7 +1,6 @@
 package main
 
 import (
-	"go-plugin-demo/src/shared"
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
@@ -48,8 +47,14 @@ func (p *StringUtilsPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interfac
 }
 
 func main() {
+	handshake := plugin.HandshakeConfig{
+		ProtocolVersion:  1,
+		MagicCookieKey:   "DYNAMIC_PLUGIN_STRING_UTILS",
+		MagicCookieValue: "string_utils",
+	}
+
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: shared.Handshake,
+		HandshakeConfig: handshake,
 		Plugins: map[string]plugin.Plugin{
 			"string_utils": &StringUtilsPlugin{
 				Impl: &StringUtilsImplementation{},

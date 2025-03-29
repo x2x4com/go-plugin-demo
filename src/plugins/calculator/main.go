@@ -93,8 +93,14 @@ func (c *CalculatorRPC) Divide(a, b int) (float64, error) {
 }
 
 func main() {
+	handshake := plugin.HandshakeConfig{
+		ProtocolVersion:  1,
+		MagicCookieKey:   "DYNAMIC_PLUGIN_CALCULATOR",
+		MagicCookieValue: "calculator",
+	}
+
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: shared.Handshake,
+		HandshakeConfig: handshake,
 		Plugins: map[string]plugin.Plugin{
 			"calculator": &CalculatorPlugin{
 				Impl: &CalculatorImplementation{},

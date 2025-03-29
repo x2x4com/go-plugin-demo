@@ -13,7 +13,7 @@ build: deps host plugins
 
 host: $(HOST_SRC)
 	@mkdir -p $(BIN_DIR)
-	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/host $(HOST_SRC)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/host $(SRC_DIR)/host/*.go
 
 plugins: calculator string_utils date_utils
 

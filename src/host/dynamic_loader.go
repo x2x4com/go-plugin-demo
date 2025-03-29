@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	goplugin "github.com/hashicorp/go-plugin"
 )
@@ -25,60 +24,53 @@ func NewPluginManager() *PluginManager {
 }
 
 // LoadPlugins 从配置目录加载所有插件
-func (pm *PluginManager) LoadPlugins(pluginDir string) error {
-	files, err := os.ReadDir(pluginDir)
-	if err != nil {
-		return fmt.Errorf("读取插件目录失败: %v", err)
+func (pm *PluginManager) LoadPlugins(cfg *PluginConfig) error {
+	info, err := os.Stat(cfg.Path)
+	if info.IsDir() {
+		return fmt.Errorf("%s必须是一个文件而不是目录", cfg.Path)
+	} else if err != nil {
+		return fmt.Errorf("读取插件失败: %v", err)
 	}
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		pluginPath := filepath.Join(pluginDir, file.Name())
-		client, abi, err := pm.loadPlugin(pluginPath)
-		if err != nil {
-			log.Printf("加载插件 %s 失败: %v", pluginPath, err)
-			continue
-		}
-
-		pm.plugins[abi.Name] = client
-		pm.abis[abi.Name] = abi
-		log.Printf("成功加载插件: %s v%s", abi.Name, abi.Version)
+	handshake := goplugin.HandshakeConfig{
+		ProtocolVersion:  cfg.Handshake.ProtocolVersion,
+		MagicCookieKey:   cfg.Handshake.MagicCookieKey,
+		MagicCookieValue: cfg.Handshake.MagicCookieValue,
 	}
 
-	return nil
-}
-
-func (pm *PluginManager) loadPlugin(path string) (*goplugin.Client, *shared.PluginABI, error) {
 	// 1. 创建插件客户端
 	client := goplugin.NewClient(&goplugin.ClientConfig{
-		HandshakeConfig: shared.Handshake,
-		Plugins:         map[string]goplugin.Plugin{"dynamic": &shared.DynamicPluginRPC{}},
-		Cmd:             exec.Command(path),
+		HandshakeConfig: handshake,
+		Plugins:         map[string]goplugin.Plugin{cfg.Name: &shared.DynamicPluginRPC{}},
+		Cmd:             exec.Command(cfg.Path),
 	})
 
 	// 2. 连接RPC客户端
 	rpcClient, err := client.Client()
 	if err != nil {
-		return nil, nil, fmt.Errorf("RPC连接失败: %v", err)
+		return fmt.Errorf("RPC连接失败: %v", err)
 	}
 
 	// 3. 获取插件实例
-	raw, err := rpcClient.Dispense("dynamic")
+	raw, err := rpcClient.Dispense(cfg.Name)
 	if err != nil {
-		return nil, nil, fmt.Errorf("获取插件实例失败: %v", err)
+		return fmt.Errorf("获取插件实例失败: %v", err)
 	}
+
+	fmt.Printf("插件实例: %v\n", raw)
 
 	// 4. 获取ABI描述
-	dynamicPlugin := raw.(shared.DynamicPlugin)
-	abi, err := dynamicPlugin.GetABI()
-	if err != nil {
-		return nil, nil, fmt.Errorf("获取ABI失败: %v", err)
-	}
+	//dynamicPlugin := raw.(shared.DynamicPlugin)
+	//abi, err := dynamicPlugin.GetABI()
+	//if err != nil {
+	//	return fmt.Errorf("获取ABI失败: %v", err)
+	//}
 
-	return client, abi, nil
+	pm.plugins[cfg.Name] = client
+	//pm.abis[abi.Name] = abi
+	log.Printf("成功加载插件: %s v%s", cfg.Name, "aa")
+
+	return nil
 }
 
 // Invoke 动态调用插件方法

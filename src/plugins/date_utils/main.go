@@ -1,7 +1,6 @@
 package main
 
 import (
-	"go-plugin-demo/src/shared"
 	"net/rpc"
 	"time"
 
@@ -41,8 +40,14 @@ func (p *DateUtilsPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{
 }
 
 func main() {
+	handshake := plugin.HandshakeConfig{
+		ProtocolVersion:  1,
+		MagicCookieKey:   "DYNAMIC_PLUGIN_DATE_UTILS",
+		MagicCookieValue: "date_utils",
+	}
+
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: shared.Handshake,
+		HandshakeConfig: handshake,
 		Plugins: map[string]plugin.Plugin{
 			"date_utils": &DateUtilsPlugin{
 				Impl: &DateUtilsImplementation{},
