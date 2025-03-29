@@ -1,0 +1,31 @@
+{
+  "plugins": [
+    {
+      "name": "calculator",
+      "path": "./bin/plugins/calculator",
+      "handshake": {
+        "protocol_version": 1,
+        "magic_cookie_key": "CALCULATOR_PLUGIN",
+        "magic_cookie_value": "secure-cookie-value"
+      }
+    },
+    {
+      "name": "string_utils",
+      "path": "./bin/plugins/string_utils",
+      "handshake": {
+        "protocol_version": 1,
+        "magic_cookie_key": "STRING_UTILS_PLUGIN",
+        "magic_cookie_value": "secure-cookie-value"
+      }
+    },
+    {
+      "name": "date_utils",
+      "path": "./bin/plugins/date_utils",
+      "handshake": {
+        "protocol_version": 1,
+        "magic_cookie_key": "DATE_UTILS_PLUGIN",
+        "magic_cookie_value": "secure-cookie-value"
+      }
+    }
+  ]
+}
