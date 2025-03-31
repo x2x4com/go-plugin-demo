@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
-	"time"
+	"os/exec"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+
+	calculator "go-plugin-demo/src/plugins/calculator/shared"
 )
 
 // 插件配置结构
@@ -24,29 +26,73 @@ type Config struct {
 }
 
 func main() {
+	// Create an hclog.Logger
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "plugin",
+		Output: os.Stdout,
+		Level:  hclog.Debug,
+	})
+
 	// 1. 读取配置文件
 	configFile, err := os.ReadFile("config/plugins.json")
 	if err != nil {
-		log.Fatal("读取插件配置文件失败:", err)
+		logger.Error("读取插件配置文件失败:", err)
+		return
 	}
 
 	var config Config
 	if err := json.Unmarshal(configFile, &config); err != nil {
-		log.Fatal("解析插件配置失败:", err)
+		logger.Error("解析插件配置失败:", err)
+		return
 	}
 
-	// 2. 初始化插件管理器
+	// // 2. 初始化插件管理器
 	pm := NewPluginManager()
 	defer pm.UnloadAll()
+	//
+	// // 3. 加载所有插件
+	// for _, pluginConfig := range config.Plugins {
+	// 	err := pm.LoadPlugins(&pluginConfig)
+	// 	if err != nil {
+	// 		log.Fatal(pluginConfig.Name, " 加载插件失败: ", err)
+	// 		continue
+	// 	}
+	// }
 
-	// 3. 加载所有插件
-	for _, pluginConfig := range config.Plugins {
-		err := pm.LoadPlugins(&pluginConfig)
-		if err != nil {
-			log.Fatal(pluginConfig.Name, " 加载插件失败: ", err)
-			continue
-		}
+	handshake := plugin.HandshakeConfig{
+		ProtocolVersion:  1,
+		MagicCookieKey:   "DYNAMIC_PLUGIN_CALCULATOR",
+		MagicCookieValue: "calculator",
 	}
+
+	// pluginMap is the map of plugins we can dispense.
+	pluginMap := map[string]plugin.Plugin{
+		"calculator": &calculator.CalculatorPlugin{},
+	}
+
+	// We're a host! Start by launching the plugin process.
+	client := plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig: handshake,
+		Plugins:         pluginMap,
+		Cmd:             exec.Command("./bin/plugins/calculator"),
+		Logger:          logger,
+	})
+
+	rpcClient, err := client.Client()
+	if err != nil {
+		logger.Error(fmt.Sprintf("RPC连接失败: %v", err))
+		return
+	}
+
+	// 3. 获取插件实例
+	raw, err := rpcClient.Dispense("calculator")
+	if err != nil {
+		logger.Error(fmt.Sprintf("获取插件实例失败: %v", err))
+	}
+
+	fmt.Printf("插件实例: %v\n", raw)
+
+	pm.plugins["calculator"] = client
 
 	// 4. 交互式菜单
 	reader := bufio.NewReader(os.Stdin)
@@ -62,22 +108,37 @@ func main() {
 		switch input {
 		case "1\n":
 			if _, ok := pm.plugins["calculator"]; ok {
-				testCalculator(pm)
+				rpcClient, _ := pm.plugins["calculator"].Client()
+				// 3. 获取插件实例
+				raw, err := rpcClient.Dispense("calculator")
+				if err != nil {
+					logger.Error(fmt.Sprintf("获取插件实例失败: %v", err))
+				}
+				calc := raw.(calculator.Calculator)
+				res, err := calc.Add(1, 2)
+				fmt.Printf("计算结果: %f\nerr: %v", res, err)
+				res, err = calc.Subtract(1, 2)
+				fmt.Printf("计算结果: %f\nerr: %v", res, err)
+				res, err = calc.Multiply(1, 2)
+				fmt.Printf("计算结果: %f\nerr: %v", res, err)
+				res, err = calc.Divide(1, 2)
+				fmt.Printf("计算结果: %f\nerr: %v", res, err)
+
 			} else {
 				fmt.Println("计算器插件未加载")
 			}
-		case "2\n":
-			if _, ok := pm.plugins["string_utils"]; ok {
-				testStringUtils(pm)
-			} else {
-				fmt.Println("字符串插件未加载")
-			}
-		case "3\n":
-			if _, ok := pm.plugins["date_utils"]; ok {
-				testDateUtils(pm)
-			} else {
-				fmt.Println("日期插件未加载")
-			}
+		//case "2\n":
+		//	if _, ok := pm.plugins["string_utils"]; ok {
+		//		testStringUtils(pm)
+		//	} else {
+		//		fmt.Println("字符串插件未加载")
+		//	}
+		//case "3\n":
+		//	if _, ok := pm.plugins["date_utils"]; ok {
+		//		testDateUtils(pm)
+		//	} else {
+		//		fmt.Println("日期插件未加载")
+		//	}
 		case "4\n":
 			return
 		default:
@@ -86,6 +147,7 @@ func main() {
 	}
 }
 
+/*
 func testCalculator(pm *PluginManager) {
 	fmt.Println("\n测试计算器插件:")
 	if sum, err := pm.Invoke("calculator", "Add", 5, 3); err == nil {
@@ -128,3 +190,4 @@ func testDateUtils(pm *PluginManager) {
 		fmt.Println("Between(now, now+14d) =", result, "days")
 	}
 }
+*/

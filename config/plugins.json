@@ -2,29 +2,11 @@
   "plugins": [
     {
       "name": "calculator",
-      "path": "/Users/jack/Git/github/x2x4/go-plugin-demo/bin/plugins/calculator",
+      "path": "./bin/plugins/calculator",
       "handshake": {
         "ProtocolVersion": 1,
         "MagicCookieKey": "DYNAMIC_PLUGIN_CALCULATOR",
         "MagicCookieValue": "calculator"
-      }
-    },
-    {
-      "name": "string_utils",
-      "path": "/Users/jack/Git/github/x2x4/go-plugin-demo/bin/plugins/string_utils",
-      "handshake": {
-        "ProtocolVersion": 1,
-        "MagicCookieKey": "DYNAMIC_PLUGIN_STRING_UTILS",
-        "MagicCookieValue": "string_utils"
-      }
-    },
-    {
-      "name": "date_utils",
-      "path": "/Users/jack/Git/github/x2x4/go-plugin-demo/bin/plugins/date_utils",
-      "handshake": {
-        "ProtocolVersion": 1,
-        "MagicCookieKey": "DYNAMIC_PLUGIN_DATE_UTILS",
-        "MagicCookieValue": "date_utils"
       }
     }
   ]
