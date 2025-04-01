@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
+	dynamic_plugin_shared "go-plugin-demo/src/internal/plugin/shared"
 	calculator "go-plugin-demo/src/plugins/calculator/shared"
 )
 
@@ -94,6 +96,34 @@ func main() {
 
 	pm.plugins["calculator"] = client
 
+	handshake = dynamic_plugin_shared.GenHandShakeConfig("calculator")
+
+	pluginMap = map[string]plugin.Plugin{
+		"date_utils": &dynamic_plugin_shared.DynamicPlugin{},
+	}
+
+	client = plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig: handshake,
+		Plugins:         pluginMap,
+		Cmd:             exec.Command("./bin/plugins/date_utils"),
+		Logger:          logger,
+	})
+
+	rpcClient, err = client.Client()
+	if err != nil {
+		logger.Error(fmt.Sprintf("RPC连接失败: %v", err))
+		return
+	}
+
+	raw, err = rpcClient.Dispense("date_utils")
+	if err != nil {
+		logger.Error(fmt.Sprintf("获取插件实例失败: %v", err))
+	}
+
+	fmt.Printf("插件实例: %v\n", raw)
+
+	pm.plugins["date_utils"] = client
+
 	// 4. 交互式菜单
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -133,12 +163,22 @@ func main() {
 		//	} else {
 		//		fmt.Println("字符串插件未加载")
 		//	}
-		//case "3\n":
-		//	if _, ok := pm.plugins["date_utils"]; ok {
-		//		testDateUtils(pm)
-		//	} else {
-		//		fmt.Println("日期插件未加载")
-		//	}
+		case "3\n":
+			if _, ok := pm.plugins["date_utils"]; ok {
+				rpcClient, _ := pm.plugins["date_utils"].Client()
+				// 3. 获取插件实例
+				raw, err := rpcClient.Dispense("date_utils")
+				if err != nil {
+					logger.Error(fmt.Sprintf("获取插件实例失败: %v", err))
+				}
+				dp := raw.(dynamic_plugin_shared.DynamicPluginInterface)
+				n := time.Now().Format(time.RFC3339)
+				fmt.Println("当前时间:", n)
+				res, err := dp.Invoke("AddDays", []interface{}{n, 5}, []interface{}{})
+				fmt.Printf("计算结果: %v\nerr: %v", res, err)
+			} else {
+				fmt.Println("日期插件未加载")
+			}
 		case "4\n":
 			return
 		default:
